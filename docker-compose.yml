@@ -1,0 +1,86 @@
+version: '1'
+services:
+
+  web:
+    image: your web
+    restart: always
+    tty: true
+    stdin_open: true
+    links:
+      - "mysql"
+      - "memcached"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "2222:22"
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.2
+
+  nsqd:
+    image: nsqio/nsq
+    restart: always
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160 -broadcast-address=gmzhang.com
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.3
+
+  nsqlookupd:
+    image: nsqio/nsq
+    restart: always
+    command: /nsqlookupd
+    ports:
+      - "4160:4160"
+      - "4161:4161"
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.4
+
+  nsqadmin:
+    image: nsqio/nsq
+    restart: always
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    ports:
+      - "4171:4171"
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.5
+
+  mysql:
+    image: mysql
+    tty: true
+    stdin_open: true
+    restart: always
+    environment:
+      MYSQL_USER: root
+      MYSQL_PASSWORD: your password
+      MYSQL_ROOT_PASSWORD: your password
+    volumes:
+      - "/var/lib/mysql:/var/lib/mysql"
+    ports:
+      - "3306:3306"
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.6
+
+  memcached:
+    image: memcached
+    tty: true
+    stdin_open: true
+    restart: always
+    ports:
+      - "11211:11211"
+    networks:
+      app_net:
+        ipv4_address: 172.20.0.7
+
+networks:
+  app_net:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
